@@ -1,0 +1,7 @@
+/
+/about
+/docs/{*path}
+/home
+/not-found
+/products/{id:int}
+/search

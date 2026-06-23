@@ -1,0 +1,19 @@
+<Solution>
+  <Folder Name="/.github/">
+    <File Path=".github/renovate.json" />
+  </Folder>
+  <Folder Name="/.github/workflows/">
+    <File Path=".github/workflows/build-and-test.yml" />
+    <File Path=".github/workflows/codeql.yml" />
+    <File Path=".github/workflows/publish-package.yml" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/Soenneker.Gen.Razor.Routes/Soenneker.Gen.Razor.Routes.csproj" />
+    <Project Path="src/Soenneker.Gen.Razor.Routes.BuildTasks/Soenneker.Gen.Razor.Routes.BuildTasks.csproj" />
+  </Folder>
+  <Folder Name="/test/">
+    <Project Path="test/Soenneker.Gen.Razor.Routes.Tests.Blazor/Soenneker.Gen.Razor.Routes.Tests.Blazor.csproj" />
+    <Project Path="test/Soenneker.Gen.Razor.Routes.Tests.Consumer/Soenneker.Gen.Razor.Routes.Tests.Consumer.csproj" />
+    <Project Path="test/Soenneker.Gen.Razor.Routes.Tests/Soenneker.Gen.Razor.Routes.Tests.csproj" />
+  </Folder>
+</Solution>
