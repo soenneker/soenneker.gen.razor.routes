@@ -25,7 +25,7 @@
     </PropertyGroup>
 
     <Target Name="RunRazorRoutesGeneratorBuildTasks"
-            AfterTargets="Build"
+            BeforeTargets="BeforeBuild"
             Condition="'$(DesignTimeBuild)'!='true' and '$(IsCrossTargetingBuild)'!='true' and '$(RazorRoutesEnabled)'=='true'">
 
         <Message Importance="high" Text="Running Soenneker.Gen.Razor.Routes BuildTasks: projectDir=$(_RazorRoutesProjectDir) blazorAppDir=$(RazorRoutesBlazorAppDirectory) output=$(RazorRoutesOutputPath)" />
