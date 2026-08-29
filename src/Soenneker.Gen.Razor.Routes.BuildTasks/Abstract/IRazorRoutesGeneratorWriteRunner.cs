@@ -1,6 +1,9 @@
 using System.Threading;
 using System.Threading.Tasks;
 namespace Soenneker.Gen.Razor.Routes.BuildTasks.Abstract;
+/// <summary>
+/// Runs the build-time step that writes generated Razor route output.
+/// </summary>
 public interface IRazorRoutesGeneratorWriteRunner
 {
     /// <summary>

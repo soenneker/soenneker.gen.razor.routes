@@ -10,7 +10,7 @@ using Soenneker.Gen.Razor.Routes.BuildTasks.Abstract;
 
 namespace Soenneker.Gen.Razor.Routes.BuildTasks;
 
-///<inheritdoc cref="Abstract.IRazorRoutesGeneratorWriteRunner"/>
+/// <inheritdoc cref="IRazorRoutesGeneratorWriteRunner"/>
 public sealed class RazorRoutesGeneratorWriteRunner : IRazorRoutesGeneratorWriteRunner
 {
     private static readonly Regex _pageRegex = new(@"^\s*@page\s+""(?<route>[^""]+)""", RegexOptions.Compiled | RegexOptions.Multiline);
