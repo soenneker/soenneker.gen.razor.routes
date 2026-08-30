@@ -10,10 +10,10 @@ using Soenneker.Gen.Razor.Routes.BuildTasks.Abstract;
 
 namespace Soenneker.Gen.Razor.Routes.BuildTasks;
 
-/// <inheritdoc cref="IRazorRoutesGeneratorWriteRunner"/>
 public sealed class RazorRoutesGeneratorWriteRunner : IRazorRoutesGeneratorWriteRunner
 {
     private static readonly Regex _pageRegex = new(@"^\s*@page\s+""(?<route>[^""]+)""", RegexOptions.Compiled | RegexOptions.Multiline);
+    private static readonly Regex _razorCommentRegex = new(@"@\*.*?\*@", RegexOptions.Compiled | RegexOptions.Singleline);
 
     public async ValueTask<int> Run(string[] args, CancellationToken cancellationToken)
     {
@@ -36,6 +36,10 @@ public sealed class RazorRoutesGeneratorWriteRunner : IRazorRoutesGeneratorWrite
             await WriteRoutes(outputPath, routes, cancellationToken);
             Console.WriteLine($"Generated Razor routes with {routes.Count} route(s) at {outputPath}");
         }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
         catch (Exception e)
         {
             return Fail($"Failed to generate Razor routes: {e.Message}");
@@ -46,13 +50,14 @@ public sealed class RazorRoutesGeneratorWriteRunner : IRazorRoutesGeneratorWrite
 
     private static async ValueTask<List<string>> DiscoverRoutes(string blazorAppDir, bool includeDynamicRoutes, CancellationToken cancellationToken)
     {
-        var routes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var routes = new HashSet<string>(StringComparer.Ordinal);
 
         foreach (string file in EnumerateRazorFiles(blazorAppDir))
         {
             cancellationToken.ThrowIfCancellationRequested();
 
             string content = await File.ReadAllTextAsync(file, cancellationToken);
+            content = _razorCommentRegex.Replace(content, string.Empty);
             MatchCollection routeMatches = _pageRegex.Matches(content);
 
             foreach (Match routeMatch in routeMatches)
@@ -68,7 +73,7 @@ public sealed class RazorRoutesGeneratorWriteRunner : IRazorRoutesGeneratorWrite
             }
         }
 
-        return routes.OrderBy(route => route, StringComparer.OrdinalIgnoreCase).ToList();
+        return routes.OrderBy(route => route, StringComparer.Ordinal).ToList();
     }
 
     private static IEnumerable<string> EnumerateRazorFiles(string directory)
@@ -98,7 +103,17 @@ public sealed class RazorRoutesGeneratorWriteRunner : IRazorRoutesGeneratorWrite
             Directory.CreateDirectory(outputDirectory);
 
         string text = routes.Count == 0 ? "" : string.Join(Environment.NewLine, routes) + Environment.NewLine;
-        await File.WriteAllTextAsync(outputPath, text, new UTF8Encoding(false), cancellationToken);
+        string temporaryPath = Path.Combine(outputDirectory!, $".{Path.GetFileName(outputPath)}.{Guid.NewGuid():N}.tmp");
+
+        try
+        {
+            await File.WriteAllTextAsync(temporaryPath, text, new UTF8Encoding(false), cancellationToken);
+            File.Move(temporaryPath, outputPath, true);
+        }
+        finally
+        {
+            File.Delete(temporaryPath);
+        }
     }
 
     private static string GetFullPath(string path, string basePath)

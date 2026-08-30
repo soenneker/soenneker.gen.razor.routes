@@ -42,6 +42,14 @@ public sealed class RazorRoutesGeneratorTests : UnitTest
                 <h1>Search</h1>
                 """);
 
+            await File.WriteAllTextAsync(Path.Combine(pagesDir, "CaseVariants.razor"), """
+                @page "/About"
+                @page "/about"
+                @*
+                @page "/commented-out"
+                *@
+                """);
+
             await File.WriteAllTextAsync(Path.Combine(blazorAppDir, "obj", "Generated.razor"), """
                 @page "/obj-generated"
                 """);
@@ -58,7 +66,7 @@ public sealed class RazorRoutesGeneratorTests : UnitTest
                 throw new InvalidOperationException($"Runner exited with {exitCode}");
 
             string[] routes = (await File.ReadAllLinesAsync(outputFullPath)).Where(line => !string.IsNullOrWhiteSpace(line)).ToArray();
-            string[] expected = { "/", "/home", "/products/{id:int}", "/search" };
+            string[] expected = { "/", "/About", "/about", "/home", "/products/{id:int}", "/search" };
 
             if (!routes.SequenceEqual(expected, StringComparer.Ordinal))
                 throw new InvalidOperationException($"Unexpected routes:{Environment.NewLine}{string.Join(Environment.NewLine, routes)}");
