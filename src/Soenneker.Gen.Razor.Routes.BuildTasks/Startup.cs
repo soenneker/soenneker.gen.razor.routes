@@ -1,5 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Soenneker.Gen.Razor.Routes.BuildTasks.Abstract;
+using Soenneker.Utils.Directory.Registrars;
+using Soenneker.Utils.File.Registrars;
 namespace Soenneker.Gen.Razor.Routes.BuildTasks;
 public static class Startup
 {
@@ -9,7 +11,9 @@ public static class Startup
     /// <param name="services">Service collection that receives the registration.</param>
     public static void ConfigureServices(IServiceCollection services)
     {
-        services.AddSingleton<IRazorRoutesGeneratorWriteRunner, RazorRoutesGeneratorWriteRunner>();
+        services.AddDirectoryUtilAsSingleton()
+                .AddFileUtilAsSingleton()
+                .AddSingleton<IRazorRoutesGeneratorWriteRunner, RazorRoutesGeneratorWriteRunner>();
         services.AddHostedService<ConsoleHostedService>();
     }
 }

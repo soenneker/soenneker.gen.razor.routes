@@ -2,11 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Soenneker.Gen.Razor.Routes.BuildTasks.Abstract;
+using Soenneker.Utils.Directory.Abstract;
+using Soenneker.Utils.File.Abstract;
 
 namespace Soenneker.Gen.Razor.Routes.BuildTasks;
 
@@ -14,6 +15,14 @@ public sealed class RazorRoutesGeneratorWriteRunner : IRazorRoutesGeneratorWrite
 {
     private static readonly Regex _pageRegex = new(@"^\s*@page\s+""(?<route>[^""]+)""", RegexOptions.Compiled | RegexOptions.Multiline);
     private static readonly Regex _razorCommentRegex = new(@"@\*.*?\*@", RegexOptions.Compiled | RegexOptions.Singleline);
+    private readonly IFileUtil _fileUtil;
+    private readonly IDirectoryUtil _directoryUtil;
+
+    public RazorRoutesGeneratorWriteRunner(IFileUtil fileUtil, IDirectoryUtil directoryUtil)
+    {
+        _fileUtil = fileUtil;
+        _directoryUtil = directoryUtil;
+    }
 
     public async ValueTask<int> Run(string[] args, CancellationToken cancellationToken)
     {
@@ -27,7 +36,7 @@ public sealed class RazorRoutesGeneratorWriteRunner : IRazorRoutesGeneratorWrite
         string outputPath = GetFullPath(GetOptional(map, "--outputPath") ?? "routes.txt", projectDir);
         bool includeDynamicRoutes = TryParseBoolean(GetOptional(map, "--includeDynamicRoutes"), defaultValue: true);
 
-        if (!Directory.Exists(blazorAppDir))
+        if (!await _directoryUtil.Exists(blazorAppDir, cancellationToken))
             return Fail($"Blazor app directory not found: {blazorAppDir}");
 
         try
@@ -48,7 +57,7 @@ public sealed class RazorRoutesGeneratorWriteRunner : IRazorRoutesGeneratorWrite
         return 0;
     }
 
-    private static async ValueTask<List<string>> DiscoverRoutes(string blazorAppDir, bool includeDynamicRoutes, CancellationToken cancellationToken)
+    private async ValueTask<List<string>> DiscoverRoutes(string blazorAppDir, bool includeDynamicRoutes, CancellationToken cancellationToken)
     {
         var routes = new HashSet<string>(StringComparer.Ordinal);
 
@@ -56,7 +65,7 @@ public sealed class RazorRoutesGeneratorWriteRunner : IRazorRoutesGeneratorWrite
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            string content = await File.ReadAllTextAsync(file, cancellationToken);
+            string content = await _fileUtil.Read(file, log: false, cancellationToken);
             content = _razorCommentRegex.Replace(content, string.Empty);
             MatchCollection routeMatches = _pageRegex.Matches(content);
 
@@ -96,24 +105,14 @@ public sealed class RazorRoutesGeneratorWriteRunner : IRazorRoutesGeneratorWrite
         }
     }
 
-    private static async ValueTask WriteRoutes(string outputPath, IReadOnlyCollection<string> routes, CancellationToken cancellationToken)
+    private async ValueTask WriteRoutes(string outputPath, IReadOnlyCollection<string> routes, CancellationToken cancellationToken)
     {
         string? outputDirectory = Path.GetDirectoryName(outputPath);
         if (!string.IsNullOrWhiteSpace(outputDirectory))
-            Directory.CreateDirectory(outputDirectory);
+            await _directoryUtil.Create(outputDirectory, log: false, cancellationToken);
 
         string text = routes.Count == 0 ? "" : string.Join(Environment.NewLine, routes) + Environment.NewLine;
-        string temporaryPath = Path.Combine(outputDirectory!, $".{Path.GetFileName(outputPath)}.{Guid.NewGuid():N}.tmp");
-
-        try
-        {
-            await File.WriteAllTextAsync(temporaryPath, text, new UTF8Encoding(false), cancellationToken);
-            File.Move(temporaryPath, outputPath, true);
-        }
-        finally
-        {
-            File.Delete(temporaryPath);
-        }
+        await _fileUtil.WriteAtomically(outputPath, text, log: false, cancellationToken);
     }
 
     private static string GetFullPath(string path, string basePath)
