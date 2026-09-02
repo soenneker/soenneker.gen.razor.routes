@@ -11,7 +11,7 @@ namespace Soenneker.Gen.Razor.Routes.Tests;
 public sealed class RazorRoutesGeneratorTests : UnitTest
 {
     [Test]
-    public async ValueTask Generates_routes_txt_from_configured_blazor_app()
+    public async ValueTask Generates_routes_txt_from_configured_blazor_app(CancellationToken cancellationToken)
     {
         string tempDir = Path.Combine(Path.GetTempPath(), "soenneker-razor-routes-" + Guid.NewGuid().ToString("N"));
         string consumerDir = Path.Combine(tempDir, "consumer");
@@ -60,7 +60,7 @@ public sealed class RazorRoutesGeneratorTests : UnitTest
                 "--projectDir", consumerDir,
                 "--blazorAppDir", blazorAppDir,
                 "--outputPath", outputPath
-            }, CancellationToken.None);
+            }, cancellationToken);
 
             if (exitCode != 0)
                 throw new InvalidOperationException($"Runner exited with {exitCode}");
