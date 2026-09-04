@@ -11,6 +11,7 @@ using Soenneker.Utils.File.Abstract;
 
 namespace Soenneker.Gen.Razor.Routes.BuildTasks;
 
+/// <inheritdoc cref="IRazorRoutesGeneratorWriteRunner" />
 public sealed class RazorRoutesGeneratorWriteRunner : IRazorRoutesGeneratorWriteRunner
 {
     private static readonly Regex _pageRegex = new(@"^\s*@page\s+""(?<route>[^""]+)""", RegexOptions.Compiled | RegexOptions.Multiline);
