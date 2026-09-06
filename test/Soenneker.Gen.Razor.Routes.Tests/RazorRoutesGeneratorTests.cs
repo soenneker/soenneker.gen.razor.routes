@@ -3,8 +3,11 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using Soenneker.Gen.Razor.Routes.BuildTasks;
 using Soenneker.Tests.Unit;
+using Soenneker.Utils.Directory.Registrars;
+using Soenneker.Utils.File.Registrars;
 
 namespace Soenneker.Gen.Razor.Routes.Tests;
 
@@ -13,6 +16,13 @@ public sealed class RazorRoutesGeneratorTests : UnitTest
     [Test]
     public async ValueTask Generates_routes_txt_from_configured_blazor_app(CancellationToken cancellationToken)
     {
+        await using ServiceProvider serviceProvider = new ServiceCollection()
+            .AddLogging()
+            .AddDirectoryUtilAsSingleton()
+            .AddFileUtilAsSingleton()
+            .AddSingleton<RazorRoutesGeneratorWriteRunner>()
+            .BuildServiceProvider();
+
         string tempDir = Path.Combine(Path.GetTempPath(), "soenneker-razor-routes-" + Guid.NewGuid().ToString("N"));
         string consumerDir = Path.Combine(tempDir, "consumer");
         string blazorAppDir = Path.Combine(tempDir, "client");
@@ -54,7 +64,7 @@ public sealed class RazorRoutesGeneratorTests : UnitTest
                 @page "/obj-generated"
                 """);
 
-            var runner = new RazorRoutesGeneratorWriteRunner();
+            var runner = serviceProvider.GetRequiredService<RazorRoutesGeneratorWriteRunner>();
             int exitCode = await runner.Run(new[]
             {
                 "--projectDir", consumerDir,
