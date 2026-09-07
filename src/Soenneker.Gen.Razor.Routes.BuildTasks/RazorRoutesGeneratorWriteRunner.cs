@@ -83,7 +83,9 @@ public sealed class RazorRoutesGeneratorWriteRunner : IRazorRoutesGeneratorWrite
             }
         }
 
-        return routes.OrderBy(route => route, StringComparer.Ordinal).ToList();
+        var result = new List<string>(routes);
+        result.Sort(StringComparer.Ordinal);
+        return result;
     }
 
     private static IEnumerable<string> EnumerateRazorFiles(string directory)
