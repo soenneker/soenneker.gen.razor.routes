@@ -1,3 +1,4 @@
+using Soenneker.Utils.File.Abstract;
 using System;
 using System.IO;
 using System.Linq;
@@ -36,23 +37,23 @@ public sealed class RazorRoutesGeneratorTests : UnitTest
             Directory.CreateDirectory(pagesDir);
             Directory.CreateDirectory(Path.Combine(blazorAppDir, "obj"));
 
-            await File.WriteAllTextAsync(Path.Combine(pagesDir, "Home.razor"), """
+            await serviceProvider.GetRequiredService<IFileUtil>().Write(Path.Combine(pagesDir, "Home.razor"), """
                 @page "/"
                 @page "/home"
                 <h1>Home</h1>
                 """);
 
-            await File.WriteAllTextAsync(Path.Combine(pagesDir, "Products.razor"), """
+            await serviceProvider.GetRequiredService<IFileUtil>().Write(Path.Combine(pagesDir, "Products.razor"), """
                 @page "/products/{id:int}"
                 <h1>Product</h1>
                 """);
 
-            await File.WriteAllTextAsync(Path.Combine(pagesDir, "Search.razor"), """
+            await serviceProvider.GetRequiredService<IFileUtil>().Write(Path.Combine(pagesDir, "Search.razor"), """
                 @page "/search"
                 <h1>Search</h1>
                 """);
 
-            await File.WriteAllTextAsync(Path.Combine(pagesDir, "CaseVariants.razor"), """
+            await serviceProvider.GetRequiredService<IFileUtil>().Write(Path.Combine(pagesDir, "CaseVariants.razor"), """
                 @page "/About"
                 @page "/about"
                 @*
@@ -60,7 +61,7 @@ public sealed class RazorRoutesGeneratorTests : UnitTest
                 *@
                 """);
 
-            await File.WriteAllTextAsync(Path.Combine(blazorAppDir, "obj", "Generated.razor"), """
+            await serviceProvider.GetRequiredService<IFileUtil>().Write(Path.Combine(blazorAppDir, "obj", "Generated.razor"), """
                 @page "/obj-generated"
                 """);
 
@@ -75,7 +76,7 @@ public sealed class RazorRoutesGeneratorTests : UnitTest
             if (exitCode != 0)
                 throw new InvalidOperationException($"Runner exited with {exitCode}");
 
-            string[] routes = (await File.ReadAllLinesAsync(outputFullPath)).Where(line => !string.IsNullOrWhiteSpace(line)).ToArray();
+            string[] routes = (await serviceProvider.GetRequiredService<IFileUtil>().ReadAsLines(outputFullPath)).Where(line => !string.IsNullOrWhiteSpace(line)).ToArray();
             string[] expected = { "/", "/About", "/about", "/home", "/products/{id:int}", "/search" };
 
             if (!routes.SequenceEqual(expected, StringComparer.Ordinal))

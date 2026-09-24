@@ -14,6 +14,5 @@ public static class Startup
         services.AddDirectoryUtilAsSingleton()
                 .AddFileUtilAsSingleton()
                 .AddSingleton<IRazorRoutesGeneratorWriteRunner, RazorRoutesGeneratorWriteRunner>();
-        services.AddHostedService<ConsoleHostedService>();
     }
 }
