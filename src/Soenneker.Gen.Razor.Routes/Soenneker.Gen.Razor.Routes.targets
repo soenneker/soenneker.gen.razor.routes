@@ -5,13 +5,15 @@
     </Target>
 
     <PropertyGroup>
-        <_RazorRoutesBuildTasksDllFromPackage>$([System.IO.Path]::Combine('$(MSBuildThisFileDirectory)', 'Soenneker.Gen.Razor.Routes.BuildTasks.dll'))</_RazorRoutesBuildTasksDllFromPackage>
-        <_RazorRoutesBuildTasksDllFromBuildTransitive>$([System.IO.Path]::GetFullPath($([System.IO.Path]::Combine('$(MSBuildThisFileDirectory)', '..', 'buildTransitive', 'Soenneker.Gen.Razor.Routes.BuildTasks.dll'))))</_RazorRoutesBuildTasksDllFromBuildTransitive>
-        <_RazorRoutesBuildTasksDllFromProject>$([System.IO.Path]::GetFullPath($([System.IO.Path]::Combine('$(MSBuildThisFileDirectory)', '..', 'Soenneker.Gen.Razor.Routes.BuildTasks', 'bin', '$(Configuration)', 'Soenneker.Gen.Razor.Routes.BuildTasks.dll'))))</_RazorRoutesBuildTasksDllFromProject>
-        <RazorRoutesBuildTasksDllPath Condition="'$(RazorRoutesBuildTasksDllPath)'=='' and '$(BuildTasksDllPath)'!=''">$(BuildTasksDllPath)</RazorRoutesBuildTasksDllPath>
-        <RazorRoutesBuildTasksDllPath Condition="'$(RazorRoutesBuildTasksDllPath)'=='' and Exists('$(_RazorRoutesBuildTasksDllFromPackage)')">$(_RazorRoutesBuildTasksDllFromPackage)</RazorRoutesBuildTasksDllPath>
-        <RazorRoutesBuildTasksDllPath Condition="'$(RazorRoutesBuildTasksDllPath)'=='' and Exists('$(_RazorRoutesBuildTasksDllFromBuildTransitive)')">$(_RazorRoutesBuildTasksDllFromBuildTransitive)</RazorRoutesBuildTasksDllPath>
-        <RazorRoutesBuildTasksDllPath Condition="'$(RazorRoutesBuildTasksDllPath)'=='' and Exists('$(_RazorRoutesBuildTasksDllFromProject)')">$(_RazorRoutesBuildTasksDllFromProject)</RazorRoutesBuildTasksDllPath>
+        <!-- Select the SDK host rather than the application's RuntimeIdentifier (for example browser-wasm). -->
+        <RazorRoutesToolRuntimeIdentifier Condition="'$(RazorRoutesToolRuntimeIdentifier)' == ''">$(NETCoreSdkRuntimeIdentifier)</RazorRoutesToolRuntimeIdentifier>
+        <_RazorRoutesExecutableName>Soenneker.Gen.Razor.Routes.BuildTasks</_RazorRoutesExecutableName>
+        <_RazorRoutesExecutableName Condition="$([System.String]::Copy('$(RazorRoutesToolRuntimeIdentifier)').StartsWith('win-'))">$(_RazorRoutesExecutableName).exe</_RazorRoutesExecutableName>
+        <_RazorRoutesNativePackagePath>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../tools/native/$(RazorRoutesToolRuntimeIdentifier)/$(_RazorRoutesExecutableName)'))</_RazorRoutesNativePackagePath>
+        <_RazorRoutesNativeProjectPath>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../../artifacts/native/$(RazorRoutesToolRuntimeIdentifier)/$(_RazorRoutesExecutableName)'))</_RazorRoutesNativeProjectPath>
+        <RazorRoutesBuildTasksExecutablePath Condition="'$(RazorRoutesBuildTasksExecutablePath)' == '' and Exists('$(_RazorRoutesNativePackagePath)')">$(_RazorRoutesNativePackagePath)</RazorRoutesBuildTasksExecutablePath>
+        <RazorRoutesBuildTasksExecutablePath Condition="'$(RazorRoutesBuildTasksExecutablePath)' == ''">$(_RazorRoutesNativeProjectPath)</RazorRoutesBuildTasksExecutablePath>
+
         <RazorRoutesEnabled Condition="'$(RazorRoutesEnabled)'=='' and '$(RazorRoutesGeneratorBuildEnabled)'!=''">$(RazorRoutesGeneratorBuildEnabled)</RazorRoutesEnabled>
         <RazorRoutesEnabled Condition="'$(RazorRoutesEnabled)'==''">true</RazorRoutesEnabled>
         <RazorRoutesBlazorAppDirectory Condition="'$(RazorRoutesBlazorAppDirectory)'==''">$(ProjectDir)</RazorRoutesBlazorAppDirectory>
@@ -31,16 +33,18 @@
         <Message Importance="high" Text="Running Soenneker.Gen.Razor.Routes BuildTasks: projectDir=$(_RazorRoutesProjectDir) blazorAppDir=$(RazorRoutesBlazorAppDirectory) output=$(RazorRoutesOutputPath)" />
         <Error Condition="'$(_RazorRoutesProjectDir)' == ''"
                Text="Soenneker.Gen.Razor.Routes: project directory could not be resolved." />
-        <Error Condition="'$(RazorRoutesBuildTasksDllPath)'==''"
-               Text="RazorRoutesBuildTasksDllPath was not resolved. MSBuildThisFileDirectory=$(MSBuildThisFileDirectory)" />
-        <Error Condition="!Exists('$(RazorRoutesBuildTasksDllPath)')"
-               Text="Razor routes BuildTasks DLL not found at '$(RazorRoutesBuildTasksDllPath)'." />
+        <Error Condition="'$(RazorRoutesBuildTasksExecutablePath)'==''"
+               Text="RazorRoutesBuildTasksExecutablePath was not resolved. MSBuildThisFileDirectory=$(MSBuildThisFileDirectory)" />
+        <Error Condition="!Exists('$(RazorRoutesBuildTasksExecutablePath)')"
+               Text="Razor routes native BuildTasks executable not found at '$(RazorRoutesBuildTasksExecutablePath)'." />
 
+        <!-- NuGet extraction does not preserve Unix execute permissions. -->
+        <Exec Condition="'$(OS)' != 'Windows_NT'" Command="chmod +x &quot;$(RazorRoutesBuildTasksExecutablePath)&quot;" />
         <Exec WorkingDirectory="$(_RazorRoutesProjectDir)"
               IgnoreExitCode="false"
               ConsoleToMSBuild="true"
               StandardOutputImportance="high"
               StandardErrorImportance="high"
-              Command='dotnet exec &quot;$(RazorRoutesBuildTasksDllPath)&quot; --projectDir &quot;$(_RazorRoutesProjectDir)&quot;$(_RazorRoutesBlazorAppDirectoryArg)$(_RazorRoutesOutputPathArg)$(_RazorRoutesIncludeDynamicRoutesArg)' />
+              Command='&quot;$(RazorRoutesBuildTasksExecutablePath)&quot; --projectDir &quot;$(_RazorRoutesProjectDir)&quot;$(_RazorRoutesBlazorAppDirectoryArg)$(_RazorRoutesOutputPathArg)$(_RazorRoutesIncludeDynamicRoutesArg)' />
     </Target>
 </Project>

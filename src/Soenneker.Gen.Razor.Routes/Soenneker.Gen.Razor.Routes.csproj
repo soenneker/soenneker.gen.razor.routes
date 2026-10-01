@@ -59,22 +59,34 @@
     <ItemGroup>
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.9.0" PrivateAssets="all" />
     </ItemGroup>
+    <PropertyGroup>
+        <RazorRoutesNativeRuntimeIdentifier Condition="'$(RazorRoutesNativeRuntimeIdentifier)' == ''">$(NETCoreSdkRuntimeIdentifier)</RazorRoutesNativeRuntimeIdentifier>
+        <RazorRoutesNativeArtifactsDir Condition="'$(RazorRoutesNativeArtifactsDir)' == ''">$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)/../../artifacts/native'))</RazorRoutesNativeArtifactsDir>
+        <_RazorRoutesNativeExecutable>Soenneker.Gen.Razor.Routes.BuildTasks</_RazorRoutesNativeExecutable>
+        <_RazorRoutesNativeExecutable Condition="$([System.String]::Copy('$(RazorRoutesNativeRuntimeIdentifier)').StartsWith('win-'))">$(_RazorRoutesNativeExecutable).exe</_RazorRoutesNativeExecutable>
+    </PropertyGroup>
 
-    <!-- When consumed via ProjectReference, BuildTasks must exist so RunRazorRoutesGeneratorBuildTasks can run. -->
-    <Target Name="BuildBuildTasksToolOnBuild" BeforeTargets="Build">
-        <MSBuild Projects="..\Soenneker.Gen.Razor.Routes.BuildTasks\Soenneker.Gen.Razor.Routes.BuildTasks.csproj" Targets="Build" Properties="Configuration=$(Configuration)" RemoveProperties="TargetFramework;TargetFrameworks" BuildInParallel="true" />
+    <Target Name="BuildBuildTasksTool" BeforeTargets="Build"
+            Condition="'$(RazorRoutesUsePrebuiltNativeTools)' != 'true'"
+            Inputs="@(RazorRoutesNativeSource);../Soenneker.Gen.Razor.Routes.BuildTasks/obj/project.assets.json"
+            Outputs="$(RazorRoutesNativeArtifactsDir)/$(RazorRoutesNativeRuntimeIdentifier)/$(_RazorRoutesNativeExecutable)">
+        <Exec Command="dotnet publish &quot;$(MSBuildProjectDirectory)/../Soenneker.Gen.Razor.Routes.BuildTasks/Soenneker.Gen.Razor.Routes.BuildTasks.csproj&quot; --configuration Release --runtime $(RazorRoutesNativeRuntimeIdentifier) --output &quot;$(RazorRoutesNativeArtifactsDir)/$(RazorRoutesNativeRuntimeIdentifier)&quot;" />
     </Target>
 
-    <Target Name="BuildBuildTasksTool" BeforeTargets="Pack" Condition="'$(IsPackable)' == 'true'">
-
-        <MSBuild Projects="..\Soenneker.Gen.Razor.Routes.BuildTasks\Soenneker.Gen.Razor.Routes.BuildTasks.csproj" Targets="Build" Properties="Configuration=$(Configuration);NoBuild=false" RemoveProperties="TargetFramework;TargetFrameworks" BuildInParallel="true" />
-
-        <Error Condition="!Exists('..\Soenneker.Gen.Razor.Routes.BuildTasks\bin\$(Configuration)\Soenneker.Gen.Razor.Routes.BuildTasks.dll')" Text="BuildTasks output missing. Aborting pack to avoid publishing a broken package." />
-    </Target>
+    <ItemGroup>
+        <RazorRoutesNativeSource Include="../Soenneker.Gen.Razor.Routes.BuildTasks/**/*.cs;../Soenneker.Gen.Razor.Routes.BuildTasks/*.csproj"
+                             Exclude="../Soenneker.Gen.Razor.Routes.BuildTasks/bin/**;../Soenneker.Gen.Razor.Routes.BuildTasks/obj/**" />
+    </ItemGroup>
 
     <Target Name="AddBuildTasksOutputToPackage" DependsOnTargets="BuildBuildTasksTool">
         <ItemGroup>
-            <TfmSpecificPackageFile Include="..\Soenneker.Gen.Razor.Routes.BuildTasks\bin\$(Configuration)\**\*.*" PackagePath="buildTransitive\%(RecursiveDir)" />
+            <_RazorRoutesRequiredRuntime Include="win-x64;win-arm64;linux-x64;linux-arm64;osx-x64;osx-arm64" Condition="'$(RazorRoutesUsePrebuiltNativeTools)' == 'true'" />
+            <_RazorRoutesNativeFile Include="$(RazorRoutesNativeArtifactsDir)/**/*"
+                                Exclude="$(RazorRoutesNativeArtifactsDir)/**/*.pdb;$(RazorRoutesNativeArtifactsDir)/**/*.dbg;$(RazorRoutesNativeArtifactsDir)/**/*.dSYM/**" />
+            <TfmSpecificPackageFile Include="@(_RazorRoutesNativeFile)" PackagePath="tools/native/" />
         </ItemGroup>
+        <Error Condition="'@(_RazorRoutesRequiredRuntime)' != '' and !Exists('$(RazorRoutesNativeArtifactsDir)/%(_RazorRoutesRequiredRuntime.Identity)/Soenneker.Gen.Razor.Routes.BuildTasks') and !Exists('$(RazorRoutesNativeArtifactsDir)/%(_RazorRoutesRequiredRuntime.Identity)/Soenneker.Gen.Razor.Routes.BuildTasks.exe')"
+               Text="Missing native routes tool for %(_RazorRoutesRequiredRuntime.Identity)." />
+        <Error Condition="'@(_RazorRoutesNativeFile)' == ''" Text="Native routes tools are missing. Publish BuildTasks before packing." />
     </Target>
 </Project>
