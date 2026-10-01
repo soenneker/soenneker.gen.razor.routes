@@ -41,7 +41,7 @@ jobs:
           $env:RAZOR_NATIVE_TOOL = Join-Path $PWD "artifacts/native/${{ matrix.rid }}/Soenneker.Gen.Razor.Routes.BuildTasks$extension"
           dotnet test --project test/Soenneker.Gen.Razor.Routes.Tests -c Release -p:RazorRoutesUsePrebuiltNativeTools=true -- --treenode-filter "/*/*/NativeExecutableTests/*"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: native-${{ matrix.rid }}
           path: |
