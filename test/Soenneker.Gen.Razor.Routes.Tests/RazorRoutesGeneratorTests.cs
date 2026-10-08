@@ -41,17 +41,17 @@ public sealed class RazorRoutesGeneratorTests : UnitTest
                 @page "/"
                 @page "/home"
                 <h1>Home</h1>
-                """);
+                """, cancellationToken: cancellationToken);
 
             await serviceProvider.GetRequiredService<IFileUtil>().Write(Path.Combine(pagesDir, "Products.razor"), """
                 @page "/products/{id:int}"
                 <h1>Product</h1>
-                """);
+                """, cancellationToken: cancellationToken);
 
             await serviceProvider.GetRequiredService<IFileUtil>().Write(Path.Combine(pagesDir, "Search.razor"), """
                 @page "/search"
                 <h1>Search</h1>
-                """);
+                """, cancellationToken: cancellationToken);
 
             await serviceProvider.GetRequiredService<IFileUtil>().Write(Path.Combine(pagesDir, "CaseVariants.razor"), """
                 @page "/About"
@@ -59,11 +59,11 @@ public sealed class RazorRoutesGeneratorTests : UnitTest
                 @*
                 @page "/commented-out"
                 *@
-                """);
+                """, cancellationToken: cancellationToken);
 
             await serviceProvider.GetRequiredService<IFileUtil>().Write(Path.Combine(blazorAppDir, "obj", "Generated.razor"), """
                 @page "/obj-generated"
-                """);
+                """, cancellationToken: cancellationToken);
 
             var runner = serviceProvider.GetRequiredService<RazorRoutesGeneratorWriteRunner>();
             int exitCode = await runner.Run(new[]
@@ -76,7 +76,7 @@ public sealed class RazorRoutesGeneratorTests : UnitTest
             if (exitCode != 0)
                 throw new InvalidOperationException($"Runner exited with {exitCode}");
 
-            string[] routes = (await serviceProvider.GetRequiredService<IFileUtil>().ReadAsLines(outputFullPath)).Where(line => !string.IsNullOrWhiteSpace(line)).ToArray();
+            string[] routes = (await serviceProvider.GetRequiredService<IFileUtil>().ReadAsLines(outputFullPath, cancellationToken: cancellationToken)).Where(line => !string.IsNullOrWhiteSpace(line)).ToArray();
             string[] expected = { "/", "/About", "/about", "/home", "/products/{id:int}", "/search" };
 
             if (!routes.SequenceEqual(expected, StringComparer.Ordinal))
